@@ -72,35 +72,47 @@ def mark_attendance(detected_ids, attendance_file):
     if today not in attendance.columns:
         attendance[today] = ""
 
-
     for student_id in detected_ids:
-        # student_name = student_db.loc[student_db['id'] == student_id, 'name'].values[0]
-    
         if student_id in attendance["id"].values:
-        # Update the attendance for the existing student
             attendance.loc[attendance["id"] == student_id, today] = "P"
-    #   else:
-    #       # Add a new row for the new student
-    #       new_row = {"id": student_id, "name": student_name, today: "P"}
-    #       attendance = pd.concat([attendance, pd.DataFrame([new_row])], ignore_index=True)
-    # st.write(attendance)
+
     attendance.to_csv(attendance_file, index=False)
 
 # Streamlit App
-st.title("Attendance Management System")
+st.title("📸 Attendance Management System")
+st.markdown(
+    """
+    Welcome to the Attendance Management System. Upload a photo to automatically detect students and mark attendance.
+    """
+)
 
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png"])
+uploaded_file = st.file_uploader("📂 Upload an image", type=["jpg", "png"], accept_multiple_files=False)
 
 if uploaded_file is not None:
-    with open("temp_image.jpg", "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    image_path = "temp_image.jpg"
+    with st.spinner("Processing the image, please wait..."):
+        with open("temp_image.jpg", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        image_path = "temp_image.jpg"
 
-    # Process the image
-    try:
-        processed_image, detected_ids = identify_students_in_image(image_path, student_db)
-        mark_attendance(detected_ids,attendance_file)
-        st.image(processed_image, caption="Processed Image with Detected Students", channels="BGR")
-        st.success(f"Attendance marked for students: {', '.join(map(str, detected_ids))}")
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+        # Process the image
+        try:
+            processed_image, detected_ids = identify_students_in_image(image_path, student_db)
+            mark_attendance(detected_ids, attendance_file)
+            
+            # Display results
+            st.image(processed_image, caption="Processed Image with Detected Students", channels="BGR", use_container_width=True)
+            if detected_ids:
+                st.success(f"✅ Attendance marked for: {', '.join(map(str, detected_ids))}")
+            else:
+                st.warning("⚠️ No known students detected in the image.")
+        except Exception as e:
+            st.error(f"❌ An error occurred: {e}")
+
+# Footer
+st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown(
+    """
+    <small>Developed by Mohammed Bhadsorawala </small>
+    """,
+    unsafe_allow_html=True,
+)
